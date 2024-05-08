@@ -1,243 +1,111 @@
-import uuid
-from abc import ABC, abstractmethod
+from account import Account
+from admin import Admin
+from bank import Bank
 
-class User(ABC):
-    def __init__(self, name, email):
-        self.name = name
-        self.email = email
-        self.bank = None
-    
-    @abstractmethod
-    def create_account():
-        raise NotImplementedError
+bank = Bank("Bangladesh")
+admin = Admin()
+current_user = None
+while True:
+    print(f"\n.....Welcome to {bank.name} bank........\n")
+    print("1.Admin")
+    print("2.User")
+    print("3.Exit")
 
+    choise = int(input("Enter your option = "))
 
-class Customer(User):
-    def __init__(self, name, email, account_type):
-        super().__init__(name, email)
-        self.account_type = account_type
-        self.balance = 0
-        self.account_number = str(uuid.uuid4())
-        self.transaction_history = []
-        self.loan = 0
-        self.loan_amount = 0
-    
-    
-    def create_account(self, bank):
-        self.bank = bank
-        self.bank.users.append(self)
-    
-    def deposit(self, amount):
-        if(amount > 0):
-            self.balance += amount
-            self.bank.balance += amount
-            print(f'Deposit Successful. Updated Balance: {self.balance}.')
-            self.transaction_history.append(f'DEPOSIT: {amount} | CURRENT: {self.balance}')
-        else:
-            print("Deposit Failed. Please, deposit positive amount.")
-    
-    
-    
-    def withdraw(self, amount):
-        if(amount > self.balance):
-            print("Withdrawl amount exceeded.")
-        elif self.bank.bankrupt:
-            print("Sorry, Bank has gone bankrupt.")
-        else:
-            self.balance -= amount
-            self.bank.balance -= amount
-            print(f'Withdrawl Successful. Updated Balance: {self.balance}.')
-            self.transaction_history.append(f'WITHDRAWN: {amount} | CURRENT: {self.balance}')
-    
-    
-    
-    def view_balance(self):
-        print(f'Your current balance is {self.balance}.')
-    
-    
-    
-    def view_transaction_history(self):
-        print("----------")
-        
-        for history in self.transaction_history:
-            print(history)
-        
-        print("----------")
-    
-    
-    
-    def take_loan(self, amount):
-        if(self.loan < 2):
-            self.bank.recieve_loan(amount, self)
-        else:
-            print("Sorry, loan limit exceeded.")
-    
-    
+    if choise==1:
+       while True:
+            print("\n-------Admin Options---------\n")
+            print("1.Create Account")
+            print("2.Delete Account")
+            print("3.View All  Account")
+            print("4.Check Total Amount")
+            print("5.Check Total Loan Amount")
+            print("6.On Loan Feature")
+            print("7.Off Loan Feature")
+            print("8.Go to main pages")
 
-    def transfer(self, other, amount):
-        if(amount > self.balance):
-            print("Transfer amount exceeded.")
-        elif self.bank.bankrupt:
-            print("Sorry, Bank has gone bankrupt.")
-        elif not other:
-            print("Account does not exist.")
-        elif amount <= 0:
-            print("Transfer Failed. Please, transfer positive amount.")
-        else:
-            self.balance -= amount
-            if(other.bank != self.bank): self.bank -= amount
-            other.recieve_transfer(amount)
-            print(f'Transfer Successful. Updated Balance: {self.balance}.')
-            self.transaction_history.append(f'TRANSFERED: {amount} | CURRENT: {self.balance}')
-    
-    
-    
-    def recieve_transfer(self, amount):
-        self.balance += amount
-        self.bank.balance += amount
-        self.transaction_history.append(f'RECIEVED: {amount} | CURRENT: {self.balance}')
-        return f'Transfer Recieved Successfully. Updated Balance: {self.balance}.'
-       
-        
+            ch = int(input("Enter your Option = "))
+
+            if ch==1:
+                name = input("Name = ")
+                email = input("Email = ")
+                address = input("Address = ")
+                type = input("Type = ")
+                current_user=admin.create_account(bank,name,email,address,type)
+            elif ch==2:
+                account  = int(input("Account Number = "))
+                admin.delete_account(bank,account_number=account)
+            elif ch==3:
+                admin.get_all_accounts(bank)
+            elif ch==4:
+                admin.get_total_balance(bank)
+            elif ch==5:
+                admin.get_total_loan_amount(bank)
+            elif ch==6:
+                bank.on_loan_feature()
+            elif ch==7:
+                bank.off_loan_feature()
+            elif ch==8:
+                break
+            else:
+                print("Invalid Option")
         
 
-class Admin(User):
-    def __init__(self, name, email):
-        super().__init__(name, email)
-        
-    def create_account(self, bank):
-        self.bank = bank
-        self.bank.admins.append(self)
-        
-    
-    def delete_user_account(self, account_number):
-        index = 0
+    elif choise==2:
+        while True:
+            print("\n---------User Option---------\n")
+            print("1.Create Account")
+            print("2.Deposite Amount")
+            print("3.Withdraw Amount")
+            print("4.Check available balance")
+            print("5.Check Transfer History")
+            print("6.Take Loan")
+            print("7.Transfer Money")
+            print("8.Go to main pages")
 
 
-        for i, user in enumerate(self.bank.users):
-            if user.account_number == account_number:
-                index = i
+            ch = int(input("\nEnter your Option = "))
+
+            if ch==1:
+                name = input("Name = ")
+                email = input("Email = ")
+                address = input("Address = ")
+                type = input("Type = ")
+                current_user = bank.create_account(name,email,address,address)
                 
-        self.bank.users.pop(index)
-    
-    def view_users(self):
-        print('----------')
-        
-        for user in self.bank.users:
-            print(f"""
-                    NAME: {user.name} 
-                    EMAIL: {user.email} 
-                    BALANCE: {user.balance} 
-                    ACCOUNT NUMBER: {user.account_number} 
-                    LOAN AMOUNT: {user.loan_amount}
-                """)
-        
-        print('----------')
-        
-    def view_total_balance(self):
-        print("Total balance of the bank:", self.bank.balance)
-    
-    def view_total_loan(self):
-        print("Total Loan Amount of the bank:", self.bank.loan_amount)
-    
-    def switch_loan_feature(self, decision):
-        self.bank.loan = decision
-
-
-
-class Bank:
-    def __init__(self, name, initial_amount):
-        self.name = name
-        self.balance = initial_amount
-        self.bankrupt = False
-        self.loan_amount = 0
-        self.users = []
-        self.admins = []
-        self.loan = True
-    
-    def recieve_loan(self, amount, user):
-        if(self.loan == True):
-            if amount > self.balance:
-                print("Sorry, Loan amount exceeded.")
-            elif amount <= 0:
-                print("Please provide positive amount.")
+            elif ch==2:
+                deposite_amount = int(input("Amount = "))
+                current_user.deposite(deposite_amount)
+                
+            elif ch==3:
+                withdraw_amount = int(input("Amount = "))
+                current_user.withdraw(withdraw_amount)
+                
+            elif ch==4:
+                current_user.check_balance()
+            elif ch==5:
+                current_user.transaction_history()
+            elif ch==6:
+                amount = int(input("Amount  = "))
+                current_user.take_loan(amount)
+            elif ch==7:
+                print("\nEnter receiver info: \n")
+                account_number = int(input("Account Number = "))
+                name = input("Name = ")
+                email = input("Email = ")
+                address = input("Address = ")
+                type = input("Type = ")
+                receiver=Account(account_number,name,email,address,type)
+                amount = int(input("Amount  = "))
+                current_user.transfer(amount,receiver,bank)
+            elif ch==8:
+                break
             else:
-                user.loan += 1
-                user.loan_amount += amount
-                user.balance += amount
-                self.balance -= amount
-                self.loan_amount += amount
-                print(f"Successfully Loan Recieved. Updated Balance: {user.balance}")
-                user.transaction_history.append(f'LOAN: {amount} CURRENT: {user.balance}')
-        else:
-            print("Cannot give Loan")
+                print("Invalid Option")
+    elif choise==3:
+        break
+    else:
+        print("Invalid Option!")
+ 
 
-            
-
-def main():
-    bank = Bank('american bank', 1000000000000000)
-    
-    wayne = Customer("Bruce Wayne", "brucewayne@gmail.com", "current")
-    parker = Customer("Peter Parker", "peterparker@gmail.com", "savings")
-    rogers = Customer("Steve Rogers", "steverogers@gmail.com", "current")
-    
-    stark = Admin("Tony Stark", "iamironman@gmail.com")
-    
-    wayne.create_account(bank)
-    parker.create_account(bank)
-    rogers.create_account(bank)
-    
-    stark.create_account(bank)
-    
-    while True:
-        print("1. Deposit Money")
-        print("2. Withdraw Money")
-        print("3. View Balance")
-        print("4. View Transaction History")
-        print("5. Take Loan")
-        print("6. Transfer Money")
-        print("7. Delete User Account")
-        print("8. View All Users")
-        print("9. View total bank balance")
-        print("10. View total bank loan")
-        print("11. Switch Loan Feature")
-        print("12. Exit")
-        
-        n = int(input("Enter an option: "))
-        
-        if n == 1:
-            dep = int(input("Enter deposit amount: "))
-            wayne.deposit(dep)
-        elif n == 2:
-            draw = int(input("Enter withdraw amount: "))
-            wayne.withdraw(draw)
-        elif n == 3:
-            wayne.view_balance()
-        elif n == 4:
-            wayne.view_transaction_history()
-        elif n == 5:
-            amount = int(input("Enter loan amount: "))
-            wayne.take_loan(amount)
-        elif n == 6:
-            amount = int(input("Enter transfer amount: "))
-            wayne.transfer(parker, amount)
-        elif n == 7:
-            stark.delete_user_account(parker.account_number)
-        elif n == 8:
-            stark.view_users()
-        elif n == 9:
-            stark.view_total_balance()
-        elif n == 10:
-            stark.view_total_loan()
-        elif n == 11:
-            decision = input("Enter decision (y / n): ")
-            if(decision == 'y'):
-                stark.switch_loan_feature(True)
-            else:
-                stark.switch_loan_feature(False)
-        
-        else:
-            break
-
-if __name__ == '__main__':
-    main()
